@@ -1,0 +1,58 @@
+diff -ruN a/scripts/package/builddeb b/scripts/package/builddeb
+--- a/scripts/package/builddeb	2016-02-02 21:15:11.461780082 +0300
++++ b/scripts/package/builddeb	2015-07-18 15:28:56.731652339 +0300
+@@ -136,6 +136,11 @@
+ 	cp System.map "$tmpdir/boot/System.map-$version"
+ 	cp $KCONFIG_CONFIG "$tmpdir/boot/config-$version"
+ fi
++
++cp arch/arm/boot/dts/imx53-usbarmory-dflt.dtb  "$tmpdir/boot/imx53-usbarmory-dflt.dtb-$version"
++cp arch/arm/boot/dts/imx53-usbarmory-host.dtb  "$tmpdir/boot/imx53-usbarmory-host.dtb-$version"
++cp arch/arm/boot/dts/imx53-usbarmory-gpio.dtb  "$tmpdir/boot/imx53-usbarmory-gpio.dtb-$version"
++
+ # Not all arches include the boot path in KBUILD_IMAGE
+ if [ -e $KBUILD_IMAGE ]; then
+ 	cp $KBUILD_IMAGE "$tmpdir/$installed_image_path"
+diff -ruN a/scripts/package/Makefile b/scripts/package/Makefile
+--- a/scripts/package/Makefile	2016-02-02 21:15:11.461780082 +0300
++++ b/scripts/package/Makefile	2015-07-19 19:16:47.055211017 +0300
+@@ -58,12 +58,13 @@
+ # ---------------------------------------------------------------------------
+ binrpm-pkg: FORCE
+ 	$(MAKE) KBUILD_SRC=
++	echo 0 > $(objtree)/.version
++	echo 0 > $(objtree)/.tmp_version
+ 	$(CONFIG_SHELL) $(MKSPEC) prebuilt > $(objtree)/binkernel.spec
+ 	$(CONFIG_SHELL) $(srctree)/scripts/mkversion > $(objtree)/.tmp_version
+ 	mv -f $(objtree)/.tmp_version $(objtree)/.version
+-
+-	$(RPM) $(RPMOPTS) --define "_builddir $(objtree)" --target \
+-		$(UTS_MACHINE) -bb $(objtree)/binkernel.spec
++	$(RPM) $(RPMOPTS) --define "_builddir $(objtree)" --define "_arch armv7hl" --target \
++		"armv7hl" -bb $(objtree)/binkernel.spec
+ 	rm binkernel.spec
+ 
+ # Deb target
+diff -ruN a/scripts/package/mkspec b/scripts/package/mkspec
+--- a/scripts/package/mkspec	2016-02-02 21:15:11.461780082 +0300
++++ b/scripts/package/mkspec	2015-07-19 19:12:16.331215866 +0300
+@@ -92,7 +92,7 @@
+ 
+ echo 'INSTALL_MOD_PATH=$RPM_BUILD_ROOT make %{?_smp_mflags} KBUILD_SRC= mod-fw= modules_install'
+ echo 'INSTALL_FW_PATH=$RPM_BUILD_ROOT'"/lib/firmware/$KERNELRELEASE"
+-echo 'make INSTALL_FW_PATH=$INSTALL_FW_PATH' firmware_install
++#echo 'make INSTALL_FW_PATH=$INSTALL_FW_PATH' firmware_install
+ echo "%ifarch ia64"
+ echo 'cp $KBUILD_IMAGE $RPM_BUILD_ROOT'"/boot/efi/vmlinuz-$KERNELRELEASE"
+ echo 'ln -s '"efi/vmlinuz-$KERNELRELEASE" '$RPM_BUILD_ROOT'"/boot/"
+@@ -110,6 +110,10 @@
+ 
+ echo 'cp .config $RPM_BUILD_ROOT'"/boot/config-$KERNELRELEASE"
+ 
++echo 'cp arch/arm/boot/dts/imx53-usbarmory-dflt.dtb  $RPM_BUILD_ROOT'"/boot/imx53-usbarmory-dflt.dtb-$KERNELRELEASE"
++echo 'cp arch/arm/boot/dts/imx53-usbarmory-host.dtb  $RPM_BUILD_ROOT'"/boot/imx53-usbarmory-host.dtb-$KERNELRELEASE"
++echo 'cp arch/arm/boot/dts/imx53-usbarmory-gpio.dtb  $RPM_BUILD_ROOT'"/boot/imx53-usbarmory-gpio.dtb-$KERNELRELEASE"
++
+ echo "%ifnarch ppc64"
+ echo 'cp vmlinux vmlinux.orig'
+ echo 'bzip2 -9 vmlinux'
