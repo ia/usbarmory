@@ -1,0 +1,6 @@
+
+deb http://ddebs.ubuntu.com/ DIST main restricted universe multiverse
+#deb http://ddebs.ubuntu.com/ DIST-security main restricted universe multiverse
+deb http://ddebs.ubuntu.com/ DIST-updates main restricted universe multiverse
+deb http://ddebs.ubuntu.com/ DIST-proposed main restricted universe multiverse
+
