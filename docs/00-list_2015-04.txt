@@ -1,0 +1,11 @@
+ftp://ftp.denx.de/pub/u-boot/u-boot-2015.04.tar.bz2
+https://www.kernel.org/pub/linux/kernel/v4.x/linux-4.1.3.tar.xz
+http://cdimage.ubuntu.com/cdimage/ubuntu-core/releases/15.04/release/ubuntu-core-15.04-core-armhf.tar.gz
+http://cdimage.ubuntu.com/ubuntu-core/vivid/daily-preinstalled/current/vivid-preinstalled-core-armhf.tar.gz
+http://cdimage.ubuntu.com/ubuntu-core/vivid/daily-preinstalled/current/vivid-preinstalled-core-armhf.device.tar.gz
+http://releases.ubuntu.com/15.04/ubuntu-15.04-snappy-armhf-bbb.img.xz
+http://people.canonical.com/~platform/snappy/raspberrypi2/pi2_0.13_all.snap
+http://people.canonical.com/~platform/snappy/raspberrypi2/device-pi2-0.13.tar.xz
+http://people.canonical.com/~platform/snappy/raspberrypi2/ubuntu-15.04-snappy-armhf-rpi2.img.xz
+http://dev.inversepath.com/download/usbarmory/usbarmory-debian_jessie-base_image-20150507.raw.xz
+https://download.fedoraproject.org/pub/fedora/linux/releases/22/Images/armhfp/Fedora-Minimal-armhfp-22-3-sda.raw.xz
