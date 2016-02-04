@@ -1,0 +1,89 @@
+#!/usr/bin/env  bash
+
+
+help()
+{
+	echo ""
+	echo "uarmkimg - helper script to maintain usbarmory related stuff such as gnulinux rootfs/linux kernel/das u-boot loader"
+	echo ""
+	echo " * available actions:"
+	echo ""
+	echo "  download[=DIST[-VERSION]]"
+	echo "  uboot[=VERSION]"
+	echo "  linux[=VERSION]"
+	echo "  rootfs=DIST[-VERSION]"
+	echo "  ALL"
+
+	echo ""
+	echo " * samples:"
+	echo ""
+	echo "  uboot linux rootfs=fedora-23"
+	echo "   - create dd-like image with the latest versions of uboot and linux based on fedora 23 minimal rootfs"
+	echo ""
+	echo ""
+	exit 0
+}
+
+
+usage()
+{
+	echo "usage"
+	help
+}
+
+
+download()
+{
+	echo "download"
+}
+
+
+uboot()
+{
+	echo "uboot"
+}
+
+
+linux()
+{
+	echo "linux"
+}
+
+
+rootfs()
+{
+	echo "rootfs"
+}
+
+
+clean()
+{
+	echo "clean"
+}
+
+
+### static
+
+actions="help usage download uboot linux rootfs clean ALL 0"
+
+
+### main
+
+
+test -z "${1}" && help
+
+for c in $@; do
+	for a in $actions; do
+		# TODO: cmd - arg parser checks
+		if [ "${c}" = "${a}" ]; then
+			break;
+		fi;
+	done;
+	test "$a" = 0 && echo "ERROR: invalid command!" && help
+done;
+
+for c in $@; do
+	# TODO: cmd - arg parser
+	$c
+done;
+
