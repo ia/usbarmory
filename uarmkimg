@@ -8,18 +8,24 @@ help()
 	echo ""
 	echo " * available actions:"
 	echo ""
+	echo "  setenv"
 	echo "  download[=DIST[-VERSION]]"
 	echo "  uboot[=VERSION]"
 	echo "  linux[=VERSION]"
 	echo "  rootfs=DIST[-VERSION]"
 	echo "  ALL"
-
+	
 	echo ""
 	echo " * samples:"
 	echo ""
-	echo "  uboot linux rootfs=fedora-23"
-	echo "   - create dd-like image with the latest versions of uboot and linux based on fedora 23 minimal rootfs"
+	echo "  setenv"
+	echo "   - install required packages"
 	echo ""
+	echo "  uboot linux rootfs=fedora-23"
+	echo "   - create dd-ready image with the latest versions of uboot and linux based on fedora 23 minimal rootfs"
+	echo ""
+	echo "  ALL"
+	echo "   - make images using stable upstream versions of components"
 	echo ""
 	exit 0
 }
@@ -29,6 +35,12 @@ usage()
 {
 	echo "usage"
 	help
+}
+
+
+setenv()
+{
+	echo "setenv"
 }
 
 
@@ -64,7 +76,7 @@ clean()
 
 ### static
 
-actions="help usage download uboot linux rootfs clean ALL 0"
+actions="help usage setenv download uboot linux rootfs clean ALL 0"
 
 
 ### main
@@ -72,18 +84,20 @@ actions="help usage download uboot linux rootfs clean ALL 0"
 
 test -z "${1}" && help
 
-for c in $@; do
-	for a in $actions; do
-		# TODO: cmd - arg parser checks
-		if [ "${c}" = "${a}" ]; then
+
+for cmdarg in $@; do
+	for act in $actions; do
+		cmd=${cmdarg%=*}
+		arg=${cmdarg#${cmd}=*}"
+		if [ "${cmd}" = "${act}" ]; then
 			break;
 		fi;
 	done;
-	test "$a" = 0 && echo "ERROR: invalid command!" && help
+	test "$act" = 0 && echo "ERROR: invalid command!" && help
 done;
 
-for c in $@; do
+for cmdarg in $@; do
 	# TODO: cmd - arg parser
-	$c
+	$cmdarg
 done;
 
