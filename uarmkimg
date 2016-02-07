@@ -1,18 +1,22 @@
 #!/usr/bin/env  bash
+set -x
+set -e
 
 
 help()
 {
 	echo ""
-	echo "uarmkimg - helper script to maintain usbarmory related stuff such as gnulinux rootfs/linux kernel/das u-boot loader"
+	echo " uarmkimg - helper script to maintain usbarmory related stuff such as gnulinux rootfs/linux kernel/das u-boot loader"
 	echo ""
 	echo " * available actions:"
 	echo ""
 	echo "  setenv"
+	echo "  setpkgs"
 	echo "  download[=DIST[-VERSION]]"
 	echo "  uboot[=VERSION]"
 	echo "  linux[=VERSION]"
 	echo "  rootfs=DIST[-VERSION]"
+	echo "  image"
 	echo "  ALL"
 	
 	echo ""
@@ -40,43 +44,97 @@ usage()
 
 setenv()
 {
-	echo "setenv"
+	echo " ====>>>> setting environment $@ ..."
+	if [ -z "${@}" ]; then
+		conf="uarmkimg.conf"
+	else
+		test -r "${@}" || help
+		conf="${@}"
+	fi;
+	source "${conf}" || help
+	mkdir -p ${OUT}/{${BIN},${OBJ},${SRC},${DIST},${ROOT}}
+	export CROSS_COMPILE=arm-linux-gnueabihf-
+	export ARCH=arm
+	export NCPU=9
+}
+
+
+setpkgs()
+{
+	echo "setpkgs"
 }
 
 
 download()
 {
-	echo "download"
+	echo " ====>>>> downloading $@ ..."
+	dist="${@%-*}"
+	ver="${@#${dist}-*}"
+	mkdir -p "${OUT}"/dist
+	echo $fedora
+	if [ -n "${dist}" ]; then
+		${GET} ${!dist}
+	else
+		for d in ${COMPONENTS}; do
+			${GET} ${d}
+		done;
+	fi;
 }
 
 
 uboot()
 {
-	echo "uboot"
+	echo " ====>>>> preparing das u-boot bootloader ..."
+	uboot_dist="`basename $(echo "${uboot}")`"
+	test -f "${OUT}"/"${DIST}"/"${uboot_dist}" || download uboot
+	uboot_dir="`tar -tf ${OUT}/${DIST}/\"${uboot_dist}\" --exclude=\"*/*\"`"
+	uboot_path="${OUT}"/"${SRC}"/"${uboot_dir}"
+	uboot_obj=$(pwd)/"${OUT}"/"${OBJ}"/"${uboot_dir}"
+	mkdir -p "${OUT}"/"${SRC}"
+	tar -xf "${OUT}"/"${DIST}"/"${uboot_dist}" -C "${OUT}"/"${SRC}"
+	#sed  -i  's,bootargs_default=root=/dev/mmcblk0p1,bootargs_default=root=/dev/mmcblk0p1 rootfstype=ext4,'  ${uboot_path}/include/configs/usbarmory.h
+	mkdir -p "${OUT}"/"${OBJ}"/"${uboot_dir}"
+	make  -C ${uboot_path}  -j${NCPU}  distclean  mrproper
+	make  -C ${uboot_path}  -j${NCPU}  KBUILD_OUTPUT="${uboot_obj}"  distclean
+	make  -C ${uboot_path}  -j${NCPU}  KBUILD_OUTPUT="${uboot_obj}"  usbarmory_config
+	make  -C ${uboot_path}  -j${NCPU}  KBUILD_OUTPUT="${uboot_obj}"  ARCH=arm
+	cp  "${uboot_obj}/u-boot.imx"  "${OUT}/${BIN}/`basename ${uboot_dir}`.img"
 }
 
 
 linux()
 {
-	echo "linux"
+	echo "linux $@"
 }
 
 
 rootfs()
 {
-	echo "rootfs"
+	echo "rootfs $@"
+}
+
+
+image()
+{
+	echo "image $@"
+	# parse input
+	# setenv
+	# uboot
+	# linux/linux kali
+	# rootfs dist-version
 }
 
 
 clean()
 {
 	echo "clean"
+	rm -rf "${OUT}"
 }
 
 
 ### static
 
-actions="help usage setenv download uboot linux rootfs clean ALL 0"
+actions="help usage setenv setpkgs download uboot linux rootfs image clean ALL 0"
 
 
 ### main
@@ -87,8 +145,8 @@ test -z "${1}" && help
 
 for cmdarg in $@; do
 	for act in $actions; do
-		cmd=${cmdarg%=*}
-		arg=${cmdarg#${cmd}=*}"
+		cmd="${cmdarg%=*}"
+		arg="${cmdarg#${cmd}=*}"
 		if [ "${cmd}" = "${act}" ]; then
 			break;
 		fi;
@@ -96,8 +154,16 @@ for cmdarg in $@; do
 	test "$act" = 0 && echo "ERROR: invalid command!" && help
 done;
 
+setenv
+
 for cmdarg in $@; do
-	# TODO: cmd - arg parser
-	$cmdarg
+	cmd="${cmdarg%=*}"
+	arg="${cmdarg#${cmd}=*}"
+	if [ "${cmd}" = "${arg}" ]; then
+		${cmd}
+	else
+		${cmd} ${arg}
+	fi;
 done;
+
 
