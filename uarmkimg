@@ -104,7 +104,21 @@ uboot()
 
 linux()
 {
-	echo "linux $@"
+	echo " ====>>>> preparing linux kernel ..."
+	KVERSION="-1-usbarmory"
+	DTB="imx53-usbarmory-dflt.dtb  imx53-usbarmory-host.dtb  imx53-usbarmory-gpio.dtb"
+	linux_dist="`basename $(echo "${linux}")`"
+	test -f "${OUT}"/"${DIST}"/"${linux_dist}" || download linux
+	linux_dir="`tar -tf ${OUT}/${DIST}/\"${linux_dist}\" --exclude=\"*/*\"`"
+	linux_path="${OUT}"/"${SRC}"/"${linux_dir}"
+	linux_obj=$(pwd)/"${OUT}"/"${OBJ}"/"${linux_dir}"
+	mkdir -p "${OUT}"/"${SRC}"
+	tar -xf "${OUT}"/"${DIST}"/"${linux_dist}" -C "${OUT}"/"${SRC}"
+	mkdir -p "${OUT}"/"${OBJ}"/"${linux_dir}"
+	cp  configs/${version}  "${OUT}"/"${SRC}"/"${linux_dir}"/.config
+	cp  configs/imx53-usbarmory-*.dts*  ${linux_dir}/arch/arm/boot/dts/
+	make  -j${NCPU}  -C ${kernel_path}  O="${linux_obj}"  uImage  LOADADDR=0x70008000  LOCALVERSION=${KVERSION}  modules  ${DTB}
+	# TODO: fix DTB, add VERSION detection, add pkg build
 }
 
 
