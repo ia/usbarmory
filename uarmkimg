@@ -123,20 +123,24 @@ linux()
 		fi;
 	fi;
 	KVERSION="-1-usbarmory"
-	DTB="imx53-usbarmory-dflt.dts imx53-usbarmory-gpio.dts imx53-usbarmory-host.dts imx53-usbarmory-i2c.dts imx53-usbarmory-spi.dts"
+	DTS="imx53-usbarmory-dflt.dts imx53-usbarmory-gpio.dts imx53-usbarmory-host.dts imx53-usbarmory-i2c.dts imx53-usbarmory-spi.dts"
+	debdist="wily"
 	linux_dist="`basename $(echo "${linux}")`"
 	test -f "${OUT}"/"${DIST}"/"${linux_dist}" || download linux-${ver}
 	linux_dir="`tar -tf ${OUT}/${DIST}/\"${linux_dist}\" --exclude=\"*/*\"`"
 	linux_path="${OUT}"/"${SRC}"/"${linux_dir}"
 	linux_obj=$(pwd)/"${OUT}"/"${OBJ}"/"${linux_dir}"
 	mkdir -p "${OUT}"/"${SRC}"
-	tar -xf "${OUT}"/"${DIST}"/"${linux_dist}" -C "${OUT}"/"${SRC}"
+	test -d "${linux_path}" || tar -xf "${OUT}"/"${DIST}"/"${linux_dist}" -C "${OUT}"/"${SRC}"
+	TOP="`pwd`"
+	grep -q "usbarmory" "${linux_path}"/scripts/package/mkspec || ( cd "${linux_path}" && patch -p1 < "${TOP}"/patches/linux_scripts_package-usbarmory.patch )
+	cd "${TOP}"
 	mkdir -p "${OUT}"/"${OBJ}"/"${linux_dir}"
 	cp  configs/usbarmory_linux-${cfg}.config  "${OUT}"/"${OBJ}"/"${linux_dir}"/.config
 	cp  configs/imx53-usbarmory-*.dts*  ${linux_path}/arch/arm/boot/dts/
-	make  -j`_cpu`  -C ${linux_path}  O="${linux_obj}"  uImage  LOADADDR=0x70008000  LOCALVERSION=${KVERSION}  modules  ${DTB}
-	# TODO:
-	#  - add pkg build
+	make  -j`_cpu`  -C ${linux_path}  O="${linux_obj}"  uImage  LOADADDR=0x70008000  LOCALVERSION=${KVERSION}  modules  `echo ${DTS} | sed 's,\.dts,\.dtb,g'`
+	make  -j`_cpu`  -C ${linux_path}  O="${linux_obj}"  deb-pkg  binrpm-pkg  KBUILD_IMAGE=uImage  LOADADDR=0x70008000  LOCALVERSION=${KVERSION}  KBUILD_DEBARCH=armhf  KDEB_PKGVERSION=${ver}${KVERSION}  KDEB_CHANGELOG_DIST=${debdist}
+	# TODO: update patch for package targets; update config 4.4.1; automate debdist detection
 }
 
 
