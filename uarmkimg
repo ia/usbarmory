@@ -140,8 +140,8 @@ linux()
 	cp  configs/usbarmory_linux-${cfg}.config  "${OUT}"/"${OBJ}"/"${linux_dir}"/.config
 	cp  configs/imx53-usbarmory-*.dts*  ${linux_path}/arch/arm/boot/dts/
 	make  -j`_cpu`  -C ${linux_path}  O="${linux_obj}"  uImage      LOADADDR=0x70008000  LOCALVERSION=${KVERSION}  modules  ${DTB}
-	make  -j`_cpu`  -C ${linux_path}  O="${linux_obj}"  bindeb-pkg  LOADADDR=0x70008000  LOCALVERSION=${KVERSION}  KBUILD_ARCH=arm  KBUILD_DTB="${DTB}"  KBUILD_IMGNAME=uImage  KBUILD_IMAGE=uImage  KBUILD_DEBARCH=armhf  KDEB_PKGVERSION=${ver}${KVERSION}  KDEB_CHANGELOG_DIST=${debdist}
-	make  -j`_cpu`  -C ${linux_path}  O="${linux_obj}"  binrpm-pkg  LOADADDR=0x70008000  LOCALVERSION=${KVERSION}  KBUILD_ARCH=arm  KBUILD_DTB="${DTB}"  KBUILD_IMAGE="${TOP}"/"${OUT}"/"${OBJ}"/"${linux_dir}"/arch/arm/boot/uImage
+	make  -j`_cpu`  -C ${linux_path}  O="${linux_obj}"  bindeb-pkg  LOADADDR=0x70008000  LOCALVERSION=${KVERSION}  KBUILD_ARCH=arm  KBUILD_DTB="${DTB}"  KBUILD_IMGNAME=uImage  KBUILD_IMAGE=uImage  KBUILD_DEBARCH=armhf  KDEB_PKGVERSION=${ver}${KVERSION}  KDEB_CHANGELOG_DIST=${debdist}  KDEB_FW=1
+	make  -j`_cpu`  -C ${linux_path}  O="${linux_obj}"  binrpm-pkg  LOADADDR=0x70008000  LOCALVERSION=${KVERSION}  KBUILD_ARCH=arm  KBUILD_DTB="${DTB}"  KBUILD_IMGNAME=uImage  KBUILD_IMAGE="${TOP}"/"${OUT}"/"${OBJ}"/"${linux_dir}"/arch/arm/boot/uImage  KRPM_FLAGS="--define \"_arch armv7hl\" --target \"armv7hl\""
 	# TODO: update patch for package targets; update config 4.4.1; automate debdist detection
 }
 
