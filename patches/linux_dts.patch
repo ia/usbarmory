@@ -1,0 +1,18 @@
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 30bbc37..e3a7371 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -278,7 +278,12 @@ dtb-$(CONFIG_SOC_IMX53) += \
+ 	imx53-smd.dtb \
+ 	imx53-tx53-x03x.dtb \
+ 	imx53-tx53-x13x.dtb \
+-	imx53-voipac-bsb.dtb
++	imx53-voipac-bsb.dtb \
++	imx53-usbarmory-dflt.dtb \
++	imx53-usbarmory-gpio.dtb \
++	imx53-usbarmory-host.dtb \
++	imx53-usbarmory-i2c.dtb \
++	imx53-usbarmory-spi.dtb
+ dtb-$(CONFIG_SOC_IMX6Q) += \
+ 	imx6dl-apf6dev.dtb \
+ 	imx6dl-aristainetos_4.dtb \
