@@ -70,7 +70,6 @@ download()
 	dist="${@%-*}"
 	ver="${@#${dist}-*}"
 	mkdir -p "${OUT}"/dist
-	echo $fedora
 	if [ -n "${dist}" ]; then
 		if [ "${dist}" = "linux" ] && [ -n "${ver}" ]; then
 			${GET} "https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-${ver}.tar.xz"
@@ -125,7 +124,7 @@ linux()
 	KVERSION="-1-usbarmory"
 	DTS="imx53-usbarmory-dflt.dts imx53-usbarmory-gpio.dts imx53-usbarmory-host.dts imx53-usbarmory-i2c.dts imx53-usbarmory-spi.dts"
 	DTB="`echo ${DTS} | sed 's,\.dts,\.dtb,g'`"
-	debdist="wily"
+	debdist="`dirname "${ubuntu}" | sed 's,$,/,' | xargs curl -s | grep title | sed 's/.*(\(.*\)).*/\L\1/' | awk '{print $1}'`"
 	linux_dist="`basename $(echo "${linux}")`"
 	test -f "${OUT}"/"${DIST}"/"${linux_dist}" || download linux-${ver}
 	linux_dir="`tar -tf ${OUT}/${DIST}/\"${linux_dist}\" --exclude=\"*/*\"`"
@@ -142,7 +141,7 @@ linux()
 	make  -j`_cpu`  -C ${linux_path}  O="${linux_obj}"  uImage      LOADADDR=0x70008000  LOCALVERSION=${KVERSION}  modules  ${DTB}
 	make  -j`_cpu`  -C ${linux_path}  O="${linux_obj}"  bindeb-pkg  LOADADDR=0x70008000  LOCALVERSION=${KVERSION}  KBUILD_ARCH=arm  KBUILD_DTB="${DTB}"  KBUILD_IMGNAME=uImage  KBUILD_IMAGE=uImage  KBUILD_DEBARCH=armhf  KDEB_PKGVERSION=${ver}${KVERSION}  KDEB_CHANGELOG_DIST=${debdist}  KDEB_FW=1
 	make  -j`_cpu`  -C ${linux_path}  O="${linux_obj}"  binrpm-pkg  LOADADDR=0x70008000  LOCALVERSION=${KVERSION}  KBUILD_ARCH=arm  KBUILD_DTB="${DTB}"  KBUILD_IMGNAME=uImage  KBUILD_IMAGE="${TOP}"/"${OUT}"/"${OBJ}"/"${linux_dir}"/arch/arm/boot/uImage  KRPM_FLAGS="--define \"_arch armv7hl\" --target \"armv7hl\""
-	# TODO: update patch for package targets; update config 4.4.1; automate debdist detection
+	# TODO: update patch for package targets
 }
 
 
