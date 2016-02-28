@@ -1,58 +1,126 @@
-diff -ruN a/scripts/package/builddeb b/scripts/package/builddeb
---- a/scripts/package/builddeb	2016-02-02 21:15:11.461780082 +0300
-+++ b/scripts/package/builddeb	2015-07-18 15:28:56.731652339 +0300
-@@ -136,6 +136,11 @@
- 	cp System.map "$tmpdir/boot/System.map-$version"
- 	cp $KCONFIG_CONFIG "$tmpdir/boot/config-$version"
- fi
-+
-+cp arch/arm/boot/dts/imx53-usbarmory-dflt.dtb  "$tmpdir/boot/imx53-usbarmory-dflt.dtb-$version"
-+cp arch/arm/boot/dts/imx53-usbarmory-host.dtb  "$tmpdir/boot/imx53-usbarmory-host.dtb-$version"
-+cp arch/arm/boot/dts/imx53-usbarmory-gpio.dtb  "$tmpdir/boot/imx53-usbarmory-gpio.dtb-$version"
-+
- # Not all arches include the boot path in KBUILD_IMAGE
- if [ -e $KBUILD_IMAGE ]; then
- 	cp $KBUILD_IMAGE "$tmpdir/$installed_image_path"
-diff -ruN a/scripts/package/Makefile b/scripts/package/Makefile
---- a/scripts/package/Makefile	2016-02-02 21:15:11.461780082 +0300
-+++ b/scripts/package/Makefile	2015-07-19 19:16:47.055211017 +0300
-@@ -58,12 +58,13 @@
+diff --git a/scripts/package/Makefile b/scripts/package/Makefile
+index 1aca224..a34856f 100644
+--- a/scripts/package/Makefile
++++ b/scripts/package/Makefile
+@@ -59,12 +59,13 @@ rpm-pkg rpm: FORCE
  # ---------------------------------------------------------------------------
  binrpm-pkg: FORCE
  	$(MAKE) KBUILD_SRC=
 +	echo 0 > $(objtree)/.version
-+	echo 0 > $(objtree)/.tmp_version
  	$(CONFIG_SHELL) $(MKSPEC) prebuilt > $(objtree)/binkernel.spec
  	$(CONFIG_SHELL) $(srctree)/scripts/mkversion > $(objtree)/.tmp_version
  	mv -f $(objtree)/.tmp_version $(objtree)/.version
--
--	$(RPM) $(RPMOPTS) --define "_builddir $(objtree)" --target \
+ 
+ 	rpmbuild --define "_builddir $(objtree)" --target \
 -		$(UTS_MACHINE) -bb $(objtree)/binkernel.spec
-+	$(RPM) $(RPMOPTS) --define "_builddir $(objtree)" --define "_arch armv7hl" --target \
-+		"armv7hl" -bb $(objtree)/binkernel.spec
++		$(UTS_MACHINE) -bb $(objtree)/binkernel.spec $(KRPM_FLAGS)
  	rm binkernel.spec
  
  # Deb target
-diff -ruN a/scripts/package/mkspec b/scripts/package/mkspec
---- a/scripts/package/mkspec	2016-02-02 21:15:11.461780082 +0300
-+++ b/scripts/package/mkspec	2015-07-19 19:12:16.331215866 +0300
-@@ -92,7 +92,7 @@
+diff --git a/scripts/package/builddeb b/scripts/package/builddeb
+index 6c3b038..f8fd5db 100755
+--- a/scripts/package/builddeb
++++ b/scripts/package/builddeb
+@@ -118,7 +118,8 @@ parisc|mips|powerpc)
+ 	installed_image_path="boot/vmlinux-$version"
+ 	;;
+ *)
+-	installed_image_path="boot/vmlinuz-$version"
++	if [ -z "$KBUILD_IMGNAME" ]; then KBUILD_IMGNAME="vmlinuz"; fi;
++	installed_image_path="boot/$KBUILD_IMGNAME-$version"
+ esac
  
+ BUILD_DEBUG="$(grep -s '^CONFIG_DEBUG_INFO=y' $KCONFIG_CONFIG || true)"
+@@ -151,7 +152,7 @@ fi
+ if grep -q "^CONFIG_OF=y" $KCONFIG_CONFIG ; then
+ 	# Only some architectures with OF support have this target
+ 	if grep -q dtbs_install "${srctree}/arch/$SRCARCH/Makefile"; then
+-		$MAKE KBUILD_SRC= INSTALL_DTBS_PATH="$tmpdir/usr/lib/$packagename" dtbs_install
++		$MAKE KBUILD_SRC= INSTALL_DTBS_PATH="$tmpdir/dtbs/$version" dtbs_install
+ 	fi
+ fi
+ 
+@@ -183,6 +184,10 @@ if grep -q '^CONFIG_MODULES=y' $KCONFIG_CONFIG ; then
+ 	fi
+ fi
+ 
++if [ -n "$KDEB_FW" ]; then
++	$MAKE INSTALL_FW_PATH="$tmpdir/lib/firmware" KBUILD_SRC= firmware_install
++fi
++
+ if [ "$ARCH" != "um" ]; then
+ 	$MAKE headers_check KBUILD_SRC=
+ 	$MAKE headers_install KBUILD_SRC= INSTALL_HDR_PATH="$libc_headers_dir/usr"
+diff --git a/scripts/package/mkspec b/scripts/package/mkspec
+index 71004da..2b1d4d2 100755
+--- a/scripts/package/mkspec
++++ b/scripts/package/mkspec
+@@ -21,6 +21,16 @@ if [ "`grep CONFIG_DRM=y .config | cut -f2 -d\=`" = "y" ]; then
+ 	PROVIDES=kernel-drm
+ fi
+ 
++KBUILD_DTBS=false
++if grep -q "^CONFIG_OF=y" .config ; then
++	# Only some architectures with OF support have this target
++	if grep -q dtbs_install "/arch/$KBUILD_ARCH/Makefile"; then
++		KBUILD_DTBS=true
++	fi
++fi
++
++if [ -z "$KBUILD_IMGNAME" ]; then KBUILD_IMGNAME="vmlinuz"; fi;
++
+ PROVIDES="$PROVIDES kernel-$KERNELRELEASE"
+ __KERNELRELEASE=`echo $KERNELRELEASE | sed -e "s/-/_/g"`
+ 
+@@ -93,15 +103,19 @@ echo 'mkdir -p $RPM_BUILD_ROOT'"/lib/firmware/$KERNELRELEASE"
  echo 'INSTALL_MOD_PATH=$RPM_BUILD_ROOT make %{?_smp_mflags} KBUILD_SRC= mod-fw= modules_install'
  echo 'INSTALL_FW_PATH=$RPM_BUILD_ROOT'"/lib/firmware/$KERNELRELEASE"
--echo 'make INSTALL_FW_PATH=$INSTALL_FW_PATH' firmware_install
-+#echo 'make INSTALL_FW_PATH=$INSTALL_FW_PATH' firmware_install
+ echo 'make INSTALL_FW_PATH=$INSTALL_FW_PATH' firmware_install
++if $KBUILD_DTBS; then
++echo 'INSTALL_DTBS_PATH=$RPM_BUILD_ROOT'"/lib/dtbs/$KERNELRELEASE"
++echo 'make INSTALL_DTBS_PATH=$INSTALL_DTBS_PATH' dtbs_install
++fi
  echo "%ifarch ia64"
- echo 'cp $KBUILD_IMAGE $RPM_BUILD_ROOT'"/boot/efi/vmlinuz-$KERNELRELEASE"
- echo 'ln -s '"efi/vmlinuz-$KERNELRELEASE" '$RPM_BUILD_ROOT'"/boot/"
-@@ -110,6 +110,10 @@
+-echo 'cp $KBUILD_IMAGE $RPM_BUILD_ROOT'"/boot/efi/vmlinuz-$KERNELRELEASE"
+-echo 'ln -s '"efi/vmlinuz-$KERNELRELEASE" '$RPM_BUILD_ROOT'"/boot/"
++echo 'cp $KBUILD_IMAGE $RPM_BUILD_ROOT'"/boot/efi/$KBUILD_IMGNAME-$KERNELRELEASE"
++echo 'ln -s '"efi/$KBUILD_IMGNAME-$KERNELRELEASE" '$RPM_BUILD_ROOT'"/boot/"
+ echo "%else"
+ echo "%ifarch ppc64"
+ echo "cp vmlinux arch/powerpc/boot"
+-echo "cp arch/powerpc/boot/"'$KBUILD_IMAGE $RPM_BUILD_ROOT'"/boot/vmlinuz-$KERNELRELEASE"
++echo "cp arch/powerpc/boot/"'$KBUILD_IMAGE $RPM_BUILD_ROOT'"/boot/$KBUILD_IMGNAME-$KERNELRELEASE"
+ echo "%else"
+-echo 'cp $KBUILD_IMAGE $RPM_BUILD_ROOT'"/boot/vmlinuz-$KERNELRELEASE"
++echo 'cp $KBUILD_IMAGE $RPM_BUILD_ROOT'"/boot/$KBUILD_IMGNAME-$KERNELRELEASE"
+ echo "%endif"
+ echo "%endif"
  
- echo 'cp .config $RPM_BUILD_ROOT'"/boot/config-$KERNELRELEASE"
- 
-+echo 'cp arch/arm/boot/dts/imx53-usbarmory-dflt.dtb  $RPM_BUILD_ROOT'"/boot/imx53-usbarmory-dflt.dtb-$KERNELRELEASE"
-+echo 'cp arch/arm/boot/dts/imx53-usbarmory-host.dtb  $RPM_BUILD_ROOT'"/boot/imx53-usbarmory-host.dtb-$KERNELRELEASE"
-+echo 'cp arch/arm/boot/dts/imx53-usbarmory-gpio.dtb  $RPM_BUILD_ROOT'"/boot/imx53-usbarmory-gpio.dtb-$KERNELRELEASE"
-+
- echo "%ifnarch ppc64"
- echo 'cp vmlinux vmlinux.orig'
- echo 'bzip2 -9 vmlinux'
+@@ -130,12 +144,12 @@ echo "%clean"
+ echo 'rm -rf $RPM_BUILD_ROOT'
+ echo ""
+ echo "%post"
+-echo "if [ -x /sbin/installkernel -a -r /boot/vmlinuz-$KERNELRELEASE -a -r /boot/System.map-$KERNELRELEASE ]; then"
+-echo "cp /boot/vmlinuz-$KERNELRELEASE /boot/vmlinuz-$KERNELRELEASE-rpm"
++echo "if [ -x /sbin/installkernel -a -r /boot/$KBUILD_IMGNAME-$KERNELRELEASE -a -r /boot/System.map-$KERNELRELEASE ]; then"
++echo "cp /boot/$KBUILD_IMGNAME-$KERNELRELEASE /boot/$KBUILD_IMGNAME-$KERNELRELEASE-rpm"
+ echo "cp /boot/System.map-$KERNELRELEASE /boot/System.map-$KERNELRELEASE-rpm"
+-echo "rm -f /boot/vmlinuz-$KERNELRELEASE /boot/System.map-$KERNELRELEASE"
+-echo "/sbin/installkernel $KERNELRELEASE /boot/vmlinuz-$KERNELRELEASE-rpm /boot/System.map-$KERNELRELEASE-rpm"
+-echo "rm -f /boot/vmlinuz-$KERNELRELEASE-rpm /boot/System.map-$KERNELRELEASE-rpm"
++echo "rm -f /boot/$KBUILD_IMGNAME-$KERNELRELEASE /boot/System.map-$KERNELRELEASE"
++echo "/sbin/installkernel $KERNELRELEASE /boot/$KBUILD_IMGNAME-$KERNELRELEASE-rpm /boot/System.map-$KERNELRELEASE-rpm"
++echo "rm -f /boot/$KBUILD_IMGNAME-$KERNELRELEASE-rpm /boot/System.map-$KERNELRELEASE-rpm"
+ echo "fi"
+ echo ""
+ echo "%files"
+@@ -144,6 +158,9 @@ echo "/lib/modules/$KERNELRELEASE"
+ echo "%exclude /lib/modules/$KERNELRELEASE/build"
+ echo "%exclude /lib/modules/$KERNELRELEASE/source"
+ echo "/lib/firmware/$KERNELRELEASE"
++if $KBUILD_DTBS; then
++echo "/lib/dtbs/$KERNELRELEASE"
++fi
+ echo "/boot/*"
+ echo ""
+ echo "%files headers"
