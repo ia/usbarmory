@@ -128,23 +128,24 @@ linux()
 	linux_dist="`basename $(echo "${linux}")`"
 	test -f "${OUT}"/"${DIST}"/"${linux_dist}" || download linux-${ver}
 	linux_dir="`tar -tf ${OUT}/${DIST}/\"${linux_dist}\" --exclude=\"*/*\"`"
-	linux_path="${OUT}"/"${SRC}"/"${linux_dir}"
-	linux_obj=$(pwd)/"${OUT}"/"${OBJ}"/"${linux_dir}"
+	linux_src="`pwd`"/"${OUT}"/"${SRC}"/"${linux_dir}"
+	linux_obj="`pwd`"/"${OUT}"/"${OBJ}"/"${linux_dir}"
 	mkdir -p "${OUT}"/"${SRC}"
-	test -d "${linux_path}" || tar -xf "${OUT}"/"${DIST}"/"${linux_dist}" -C "${OUT}"/"${SRC}"
+	test -d "${linux_src}" || tar -xf "${OUT}"/"${DIST}"/"${linux_dist}" -C "${OUT}"/"${SRC}"
 	TOP="`pwd`"
-	if ! grep -q "KRPM_FLAGS" "${linux_path}"/scripts/package/Makefile; then
-		cd "${linux_path}"
+	if ! grep -q "KRPM_FLAGS" "${linux_src}"/scripts/package/Makefile; then
+		cd "${linux_src}"
 		patch -p1 < "${TOP}"/patches/linux_dts.patch
 		patch -p1 < "${TOP}"/patches/linux_pkg.patch
 		cd "${TOP}"
 	fi
 	mkdir -p "${OUT}"/"${OBJ}"/"${linux_dir}"
 	cp  configs/usbarmory_linux-${cfg}.config  "${OUT}"/"${OBJ}"/"${linux_dir}"/.config
-	cp  configs/imx53-usbarmory*.dts*  ${linux_path}/arch/arm/boot/dts/
-	make  -j`_cpu`  -C ${linux_path}  O="${linux_obj}"  uImage      LOADADDR=0x70008000  LOCALVERSION=${KVERSION}  modules  ${DTB}
-	make  -j`_cpu`  -C ${linux_path}  O="${linux_obj}"  bindeb-pkg  LOADADDR=0x70008000  LOCALVERSION=${KVERSION}  KBUILD_ARCH=arm  KBUILD_DTB="${DTB}"  KBUILD_IMGNAME=uImage  KBUILD_IMAGE=uImage  KBUILD_DEBARCH=armhf  KDEB_PKGVERSION=${ver}${KVERSION}  KDEB_CHANGELOG_DIST=${debdist}  KDEB_FW=1
-	make  -j`_cpu`  -C ${linux_path}  O="${linux_obj}"  binrpm-pkg  LOADADDR=0x70008000  LOCALVERSION=${KVERSION}  KBUILD_ARCH=arm  KBUILD_DTB="${DTB}"  KBUILD_IMGNAME=uImage  KBUILD_IMAGE="${TOP}"/"${OUT}"/"${OBJ}"/"${linux_dir}"/arch/arm/boot/uImage  KRPM_FLAGS="--define \"_arch armv7hl\" --target \"armv7hl\""
+	cp  configs/imx53-usbarmory*.dts*  ${linux_src}/arch/arm/boot/dts/
+	make  -j`_cpu`  -C ${linux_src}  O="${linux_obj}"  uImage      LOADADDR=0x70008000  LOCALVERSION=${KVERSION}  prepare  scripts  modules  ${DTB}
+	make  -j`_cpu`  -C ${linux_src}  O="${linux_obj}"  bindeb-pkg  LOADADDR=0x70008000  LOCALVERSION=${KVERSION}  KBUILD_ARCH=arm  KBUILD_DTB="${DTB}"  KBUILD_IMGNAME=uImage  KBUILD_IMAGE=uImage  KBUILD_DEBARCH=armhf  KDEB_PKGVERSION=${ver}${KVERSION}  KDEB_CHANGELOG_DIST=${debdist}  KDEB_FW=1
+	make  -j`_cpu`  -C ${linux_src}  O="${linux_obj}"  binrpm-pkg  LOADADDR=0x70008000  LOCALVERSION=${KVERSION}  KBUILD_ARCH=arm  KBUILD_DTB="${DTB}"  KBUILD_IMGNAME=uImage  KBUILD_IMAGE="${TOP}"/"${OUT}"/"${OBJ}"/"${linux_dir}"/arch/arm/boot/uImage  KRPM_FLAGS="--define \"_arch armv7hl\" --target \"armv7hl\"" || true
+	make  -j`_cpu`  -C ${linux_src}  O="${linux_obj}"  binrpm-pkg  LOADADDR=0x70008000  LOCALVERSION=${KVERSION}  KBUILD_ARCH=arm  KBUILD_DTB="${DTB}"  KBUILD_IMGNAME=uImage  KBUILD_IMAGE="${TOP}"/"${OUT}"/"${OBJ}"/"${linux_dir}"/arch/arm/boot/uImage  KRPM_FLAGS="--define \"_arch armv7hl\" --target \"armv7hl\""
 }
 
 
