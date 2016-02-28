@@ -8,7 +8,7 @@ index 30bbc37..e3a7371 100644
  	imx53-tx53-x13x.dtb \
 -	imx53-voipac-bsb.dtb
 +	imx53-voipac-bsb.dtb \
-+	imx53-usbarmory-dflt.dtb \
++	imx53-usbarmory.dtb \
 +	imx53-usbarmory-gpio.dtb \
 +	imx53-usbarmory-host.dtb \
 +	imx53-usbarmory-i2c.dtb \
